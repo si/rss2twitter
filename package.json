@@ -1,0 +1,33 @@
+{
+  "name": "rss2twitter",
+  "version": "1.0.0",
+  "description": "RSS feed reader to Twitter posting bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mermade/rss2twitter.git"
+  },
+  "keywords": [
+    "rss",
+    "feed",
+    "atom",
+    "reader",
+    "twitter",
+    "tweet",
+    "bot"
+  ],
+  "author": "Mike Ralphson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Mermade/rss2twitter/issues"
+  },
+  "homepage": "https://github.com/Mermade/rss2twitter#readme",
+  "dependencies": {
+    "feed-read": "0.0.1",
+    "sqlite3": "^3.1.13",
+    "twit": "^2.2.9"
+  }
+}
