@@ -12,8 +12,11 @@ const twitter = new twit({
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET||'access-token-secret' 
 });
 
-const feed = process.argv[2];
 const rundate = new Date();
+const feed = process.argv[2];
+
+let dryrun = process.argv.length>3;
+
 if (feed) {
     db.serialize(function() {
         db.run("CREATE TABLE IF NOT EXISTS tweets (feed TEXT,link TEXT,tweeted DATETIME)");
@@ -28,8 +31,12 @@ if (feed) {
                 db.get('SELECT tweeted FROM tweets WHERE feed = ? AND link = ?',[feed,article.link],function(err,row){
                     console.log(article.link);
                     if (!row || !row.tweeted) {
-                       twitter.post('statuses/update',{ status: article.title+' '+article.link },function(err,status){
-                       });
+                       console.log(article.title);
+                       if (!dryrun) {
+                           twitter.post('statuses/update',{ status: article.title+' '+article.link },function(err,status){
+                               if (err) console.warn(util.inspect(err));
+                           });
+                       }
                        stmt.run(feed,article.link,rundate.toISOString());
                     }
                     else {
