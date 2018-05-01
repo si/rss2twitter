@@ -33,8 +33,6 @@ function tweetWithMedia(article) {
     });
   })
   .then(function(b64content){
-    console.log(b64content.substr(0,30));
-
     // first we must post the media to Twitter
     twitter.post('media/upload', { media_data: b64content }, function (err, data, response) {
       if (err) console.log(err);
