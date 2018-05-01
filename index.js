@@ -1,6 +1,8 @@
 const util = require('util');
-const reader = require('feed-read');
+const reader = require('feed-read-parser');
 const twit = require('twit');
+const fetch = require('node-fetch');
+const base64stream = require('base64-stream');
 
 const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database('./tweets.db');
@@ -9,11 +11,58 @@ const twitter = new twit({
   consumer_key:        process.env.TWITTER_CONSUMER_KEY||'consumer-key',
   consumer_secret:     process.env.TWITTER_CONSUMER_SECRET||'consumer-secret',
   access_token:        process.env.TWITTER_ACCESS_TOKEN||'access-token',
-  access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET||'access-token-secret' 
+  access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET||'access-token-secret'
 });
 
 const rundate = new Date();
 const feed = process.argv[2];
+
+function tweetWithMedia(article) {
+  console.log(article.enclosure.url);
+  fetch(article.enclosure.url)
+  .then(function(res){
+    return new Promise((resolve, reject) => {
+      let chunks = [];
+      let myStream = res.body.pipe(base64stream.encode());
+      myStream.on('data', (chunk) => {
+        chunks = chunks.concat(chunk);
+      });
+      myStream.on('end', () => {
+        resolve(chunks.toString('base64'));
+      });
+    });
+  })
+  .then(function(b64content){
+    console.log(b64content.substr(0,30));
+
+    // first we must post the media to Twitter
+    twitter.post('media/upload', { media_data: b64content }, function (err, data, response) {
+      if (err) console.log(err);
+      // now we can assign alt text to the media, for use by screen readers and
+      // other text-based presentations and interpreters
+      var mediaIdStr = data.media_id_string;
+      var altText = article.description ? article.description.substr(0,80) : 'Media image';
+      var meta_params = { media_id: mediaIdStr, alt_text: { text: altText } };
+
+      twitter.post('media/metadata/create', meta_params, function (err, data, response) {
+        if (!err) {
+          // now we can reference the media and post a tweet (media will attach to the tweet)
+          var params = { status: article.title + ' ' + article.link, media_ids: [mediaIdStr] }
+
+          twitter.post('statuses/update', params, function (err, data, response) {
+            if (err) console.log(err);
+          })
+        }
+        else {
+          console.log(err);
+        }
+      })
+    });
+  })
+  .catch(function(err){
+    console.log(err);
+  });
+}
 
 let dryrun = process.argv.length>3;
 
@@ -33,9 +82,18 @@ if (feed) {
                     if (!row || !row.tweeted) {
                        console.log(article.title);
                        if (!dryrun) {
-                           twitter.post('statuses/update',{ status: article.title+' '+article.link },function(err,status){
-                               if (err) console.warn(util.inspect(err));
-                           });
+                           let needsMedia = false;
+                           if (article.link.indexOf('netflix')>=0) needsMedia = true;
+                           if (article.link.indexOf('film4')>=0) needsMedia = true;
+			   if (!article.enclosure || !article.enclosure.url) needsMedia = false;
+                           if (needsMedia) {
+                             tweetWithMedia(article);
+                           }
+                           else {
+                             twitter.post('statuses/update',{ status: article.title+' '+article.link },function(err,status){
+                                 if (err) console.warn(util.inspect(err));
+                             });
+                           }
                        }
                        stmt.run(feed,article.link,rundate.toISOString());
                     }
