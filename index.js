@@ -14,10 +14,20 @@ const twitter = new twit({
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET||'access-token-secret'
 });
 
+const LIMIT = 5;
+
 const rundate = new Date();
 const feed = process.argv[2];
 
-function tweetWithMedia(article) {
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function tweetWithMedia(article,callback) {
   console.log(article.enclosure.url);
   fetch(article.enclosure.url)
   .then(function(res){
@@ -49,16 +59,19 @@ function tweetWithMedia(article) {
 
           twitter.post('statuses/update', params, function (err, data, response) {
             if (err) console.log(err);
+            callback(err,data);
           })
         }
         else {
           console.log(err);
+          callback(err,null);
         }
       })
     });
   })
   .catch(function(err){
     console.log(err);
+    callback(err,null);
   });
 }
 
@@ -72,6 +85,11 @@ if (feed) {
     reader(feed,function(err,articles){
         if (articles && articles.length) {
             let articleCount = articles.length;
+	    if (articleCount > LIMIT) {
+                shuffleArray(articles);
+                articles = articles.slice(0,LIMIT);
+		articleCount = LIMIT;
+            }
             let done = 0;
             let stmt = db.prepare('INSERT INTO tweets VALUES (?,?,?)');
             for (let article of articles) {
@@ -85,15 +103,17 @@ if (feed) {
                            if (article.link.indexOf('film4')>=0) needsMedia = true;
 			   if (!article.enclosure || !article.enclosure.url) needsMedia = false;
                            if (needsMedia) {
-                             tweetWithMedia(article);
+                          	tweetWithMedia(article,function(err,status){
+				    if (!err) stmt.run(feed,article.link,rundate.toISOString());
+			 	});
                            }
                            else {
                              twitter.post('statuses/update',{ status: article.title+' '+article.link },function(err,status){
                                  if (err) console.warn(util.inspect(err));
+				 else stmt.run(feed,article.link,rundate.toISOString());
                              });
                            }
                        }
-                       stmt.run(feed,article.link,rundate.toISOString());
                     }
                     else {
                         console.log('Already tweeted at '+row.tweeted);
