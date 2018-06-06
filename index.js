@@ -83,6 +83,7 @@ if (feed) {
     // TODO delete rows > 90 days old
   });
   reader(feed, function (err, articles) {
+    console.log('Articles: '+(articles ? articles.length : 0));
     if (articles && articles.length) {
       let articleCount = articles.length;
       if (articleCount > LIMIT) {
@@ -104,7 +105,8 @@ if (feed) {
               if (!article.enclosure || !article.enclosure.url) needsMedia = false;
               if (needsMedia) {
                 tweetWithMedia(article, function (err, status) {
-                  if (!err) stmt.run(feed, article.link, rundate.toISOString());
+                  // if we error (could be a dupe) we update our db anyway
+                  stmt.run(feed, article.link, rundate.toISOString());
                   done++;
                   if (done >= articleCount) {
                     console.log('Calling finalize...');
@@ -116,7 +118,8 @@ if (feed) {
               else {
                 twitter.post('statuses/update', { status: article.title + ' ' + article.link }, function (err, status) {
                   if (err) console.warn(util.inspect(err));
-                  else stmt.run(feed, article.link, rundate.toISOString());
+                  // if we error (could be a dupe) we update our db anyway
+                  stmt.run(feed, article.link, rundate.toISOString());
                   done++;
                   if (done >= articleCount) {
                     console.log('Calling finalize...');
