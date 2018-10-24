@@ -26,3 +26,8 @@ they were tweeted (to prevent duplicates).
 To prevent historical entries from the RSS feed being tweeted (e.g. if you
 are migrating from another solution, or just want to avoid spamming your
 followers), provide a second parameter - at the moment, anything will do.
+
+It is recommended to run `rss2twitter` from a shell script, and it is
+likely that you will want to call this script from a `cron` job. Be aware
+of Twitter's API limits - at the time of writing they limit the number of
+tweets within a 15-minute window.
