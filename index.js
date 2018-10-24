@@ -14,10 +14,10 @@ const twitter = new twit({
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET || 'access-token-secret'
 });
 
-const LIMIT = 5;
-
 const rundate = new Date();
 const feed = process.argv[2];
+const dryrun = process.argv.length > 3;
+const LIMIT = dryrun ? 999 : 5;
 
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -75,7 +75,6 @@ function tweetWithMedia(article, callback) {
     });
 }
 
-let dryrun = process.argv.length > 3;
 
 if (feed) {
   db.serialize(function () {
