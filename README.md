@@ -5,6 +5,7 @@ A node.js utility to parse RSS feeds and tweet them via the Twitter API.
 ## Installation
 
 * Clone this repository
+* Install node.js (any LTS version from 6 is supported)
 * `npm i`
 
 ## Usage
