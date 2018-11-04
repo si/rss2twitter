@@ -29,7 +29,7 @@ export TWITTER_CONSUMER_SECRET={consumer API secret}
 export TWITTER_ACCESS_TOKEN={access token}
 export TWITTER_ACCESS_TOKEN_SECRET={access secret}
 ```
-5. Run the following command with sudo permissions: `node index.js {RSS-URL} [dry-run flag]`
+5. Run the following command: `node index.js {RSS-URL} [dry-run flag]`
 
 On first run, an SQLite3 database `tweets.db` will be created in the current
 working directory. It contains the links from the RSS feed and the date-time
